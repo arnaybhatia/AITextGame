@@ -8,6 +8,6 @@
     "postcss": "^8.4.32"
   },
   "scripts": {
-    "build:css": "tailwindcss -i ./styles/input.css -o ./styles/style.css --watch"
+    "build:css": "tailwindcss -i ./styles/input.css -o ./styles/style.css"
   }
 }

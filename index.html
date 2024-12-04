@@ -1,4 +1,13 @@
 <!DOCTYPE html>
+<!-- 
+  Faustus Chat Interface
+  A responsive chat application with AI integration
+  Features:
+  - Sidebar for chat history management
+  - Main chat area with message display
+  - Input area for user messages
+  - Persistent storage of conversations
+-->
 <html lang="en-US">
 <head>
     <meta charset="utf-8" />
@@ -7,26 +16,46 @@
     <link href="styles/style.css" rel="stylesheet" />
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
-        <h1 class="text-4xl font-bold text-center mb-8">Faustus</h1>
-        
-        <div class="bg-gray-800 rounded-lg shadow-xl p-4">
-            <div id="chat-messages" class="space-y-4 h-[500px] overflow-y-auto mb-4">
-                <!-- Messages will be inserted here -->
-            </div>
-            
-            <div class="flex gap-2">
-                <input type="text" 
-                       id="user-input" 
-                       class="flex-1 bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                       placeholder="Type your message...">
-                <button id="send-button"
-                        class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-medium">
-                    Send
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-64 bg-gray-800 p-4 flex flex-col">
+            <div class="flex gap-2 mb-4">
+                <button id="new-chat" 
+                        class="flex-1 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium">
+                    New Chat
                 </button>
+                <button id="delete-chat"
+                        class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-medium">
+                    Delete
+                </button>
+            </div>
+            <div id="chat-history" class="space-y-2 overflow-y-auto flex-1">
+                <!-- Chat history items will be inserted here -->
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 p-4">
+            <h1 class="text-4xl font-bold text-center mb-8">Faustus</h1>
+            
+            <div class="bg-gray-800 rounded-lg shadow-xl p-4 max-w-4xl mx-auto">
+                <div id="chat-messages" class="space-y-4 h-[500px] overflow-y-auto mb-4">
+                    <!-- Messages will be inserted here -->
+                </div>
+                
+                <div class="flex gap-2">
+                    <input type="text" 
+                           id="user-input" 
+                           class="flex-1 bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="Type your message...">
+                    <button id="send-button"
+                            class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-medium">
+                        Send
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-    <script type="module" src="main.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>
