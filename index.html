@@ -1,30 +1,32 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en-US">
-
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <title>Faustus</title>
     <link href="styles/style.css" rel="stylesheet" />
-    <link
-  href="https://fonts.googleapis.com/css?family=Quicksand"
-  rel="stylesheet" />
 </head>
-
-<body>
-    <h1>Faustus</h1>
-    <img src="images/logo.webp" alt="Website logo of a chat bubble." />
-    <p>This is a test paragraph</p>
-    <p>At Faustus, we're a community of</p>
-    <ul>
-        <li>technologists</li>
-        <li>thinkers</li>
-        <li>builders</li>
-    </ul>
-    <p>working together.</p>
-    <p>Link to the image: <a href="https://cloud-96wjdooe1-hack-club-bot.vercel.app/0dall__e_2024-12-03_08.45.14_-_a_minimalist_logo_design_for_a_chatbot-based_texting_game_website._the_design_should_feature_clean_lines_and_simplicity__incorporating_a_stylized_chat.webp" target="_blank" rel="noopener noreferrer"> Website Logo</a></p>
-    <button>Change user</button>
-    <script src="scripts/main.js"></script>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <h1 class="text-4xl font-bold text-center mb-8">Faustus</h1>
+        
+        <div class="bg-gray-800 rounded-lg shadow-xl p-4">
+            <div id="chat-messages" class="space-y-4 h-[500px] overflow-y-auto mb-4">
+                <!-- Messages will be inserted here -->
+            </div>
+            
+            <div class="flex gap-2">
+                <input type="text" 
+                       id="user-input" 
+                       class="flex-1 bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="Type your message...">
+                <button id="send-button"
+                        class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-medium">
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="main.js"></script>
 </body>
-
 </html>

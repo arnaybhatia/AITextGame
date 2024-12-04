@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "@mistralai/mistralai": "^1.3.5"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32"
+  },
+  "scripts": {
+    "build:css": "tailwindcss -i ./styles/input.css -o ./styles/style.css --watch"
+  }
+}
