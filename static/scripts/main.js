@@ -12,6 +12,46 @@ const newChatButton = document.getElementById('new-chat');
 const deleteChatButton = document.getElementById('delete-chat');
 const chatHistoryContainer = document.getElementById('chat-history');
 
+// Mobile menu handling
+const mobileMenuButton = document.getElementById('mobile-menu');
+const sidebar = document.getElementById('sidebar');
+let isSidebarOpen = false;
+
+function toggleSidebar() {
+    isSidebarOpen = !isSidebarOpen;
+    sidebar.classList.toggle('-translate-x-full');
+    
+    // Close sidebar when clicking outside on mobile
+    if (isSidebarOpen) {
+        document.addEventListener('click', closeSidebarOnClickOutside);
+    } else {
+        document.removeEventListener('click', closeSidebarOnClickOutside);
+    }
+}
+
+function closeSidebarOnClickOutside(event) {
+    if (isSidebarOpen && 
+        !sidebar.contains(event.target) && 
+        !mobileMenuButton.contains(event.target)) {
+        toggleSidebar();
+    }
+}
+
+mobileMenuButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleSidebar();
+});
+
+// Responsive height adjustments
+function adjustHeight() {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+
+// Initialize responsive features
+window.addEventListener('resize', adjustHeight);
+adjustHeight();
+
 // Loading state management
 function setLoading(loading) {
     isLoading = loading;
@@ -91,22 +131,22 @@ function updateChatHistoryUI() {
 async function sendMessage(message) {
     if (!message.trim() || isLoading) return;
     
-    appendMessage(message, true);
-    conversationHistory.push({ role: "user", content: message });
-    
     try {
         setLoading(true);
+        userInput.disabled = true;  // Disable input while processing
+        sendButton.disabled = true; // Disable send button while processing
+        
+        appendMessage(message, true);
+        conversationHistory.push({ role: "user", content: message });
+        
         let aiMessageDiv = null;
         let fullResponse = '';
+        let firstChunkReceived = false;
         
         const response = await fetch('/api/chat', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                messages: conversationHistory
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: conversationHistory })
         });
 
         if (!response.ok) {
@@ -127,6 +167,11 @@ async function sendMessage(message) {
                 if (line.startsWith('data: ')) {
                     const data = line.slice(6);
                     if (data === '[DONE]') continue;
+                    
+                    if (!firstChunkReceived) {
+                        setLoading(false);
+                        firstChunkReceived = true;
+                    }
                     
                     fullResponse += data;
                     if (!aiMessageDiv) {
@@ -150,6 +195,9 @@ async function sendMessage(message) {
         const errorDiv = appendMessage('Sorry, there was an error: ' + error.message, false);
     } finally {
         setLoading(false);
+        userInput.disabled = false;  // Re-enable input after processing
+        sendButton.disabled = false; // Re-enable send button after processing
+        userInput.focus();          // Return focus to input
     }
 }
 
@@ -173,6 +221,7 @@ function appendMessage(content, isUser = false) {
 
 // Event Listeners
 sendButton.addEventListener('click', async () => {
+    if (isLoading) return;  // Prevent sending if already processing
     const message = userInput.value.trim();
     if (message) {
         userInput.value = '';
@@ -181,9 +230,13 @@ sendButton.addEventListener('click', async () => {
 });
 
 userInput.addEventListener('keypress', async (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !isLoading) {  // Check isLoading here too
         e.preventDefault();
-        sendButton.click();
+        const message = userInput.value.trim();
+        if (message) {
+            userInput.value = '';
+            await sendMessage(message);
+        }
     }
 });
 

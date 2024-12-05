@@ -23,6 +23,9 @@ module.exports = {
           '50%': { opacity: .5 },
         },
       },
+      height: {
+        'screen-dynamic': 'calc(var(--vh, 1vh) * 100)',
+      }
     },
   },
   plugins: [],
