@@ -12,6 +12,47 @@ const newChatButton = document.getElementById('new-chat');
 const deleteChatButton = document.getElementById('delete-chat');
 const chatHistoryContainer = document.getElementById('chat-history');
 
+// Mobile menu handling
+const mobileMenuButton = document.getElementById('mobile-menu-button');
+const sidebar = document.getElementById('sidebar');
+let isSidebarOpen = false;
+
+function toggleSidebar() {
+    isSidebarOpen = !isSidebarOpen;
+    sidebar.classList.toggle('-translate-x-full');
+    
+    // Close sidebar when clicking outside
+    if (isSidebarOpen) {
+        document.addEventListener('click', closeSidebarOnClickOutside);
+    } else {
+        document.removeEventListener('click', closeSidebarOnClickOutside);
+    }
+}
+
+function closeSidebarOnClickOutside(event) {
+    if (isSidebarOpen && 
+        !sidebar.contains(event.target) && 
+        !mobileMenuButton.contains(event.target)) {
+        toggleSidebar();
+    }
+}
+
+// Add mobile menu handlers
+mobileMenuButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleSidebar();
+});
+
+// Handle window resizing
+function handleResize() {
+    if (window.innerWidth >= 768 && isSidebarOpen) {
+        isSidebarOpen = false;
+        document.removeEventListener('click', closeSidebarOnClickOutside);
+    }
+}
+
+window.addEventListener('resize', handleResize);
+
 // Loading state management
 function setLoading(loading) {
     isLoading = loading;
