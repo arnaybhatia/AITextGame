@@ -70,6 +70,7 @@ function setLoading(loading) {
     } else {
         const loadingDiv = document.getElementById('loading-message');
         if (loadingDiv) loadingDiv.remove();
+        userInput.focus(); // Return focus to input when loading is complete
     }
 }
 
@@ -214,17 +215,23 @@ function appendMessage(content, isUser = false) {
 
 // Event Listeners
 sendButton.addEventListener('click', async () => {
-    const message = userInput.value.trim();
-    if (message) {
-        userInput.value = '';
-        await sendMessage(message);
+    if (!isLoading) {
+        const message = userInput.value.trim();
+        if (message) {
+            userInput.value = '';
+            await sendMessage(message);
+        }
     }
 });
 
 userInput.addEventListener('keypress', async (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !isLoading) {
         e.preventDefault();
-        sendButton.click();
+        const message = userInput.value.trim();
+        if (message) {
+            userInput.value = '';
+            await sendMessage(message);
+        }
     }
 });
 

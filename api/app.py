@@ -56,7 +56,7 @@ def chat():
 
         def generate():
             response = client.chat_stream(
-                model="mistral-small-latest",
+                model="mistral-large-latest",
                 messages=chat_messages
             )
             
