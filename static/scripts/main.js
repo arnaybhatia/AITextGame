@@ -1,41 +1,70 @@
-const myImage = document.querySelector("img");
+// Chat history management
+let currentChatId = null;
+let chatHistory = [];
 
-myImage.onclick = () => {
-  const mySrc = myImage.getAttribute("src");
-  console.log("click recieved");
-  if (mySrc === "images/logo.webp") {
-    myImage.setAttribute("src", "images/derpyWoody.jpeg");
-    console.log("derpy woody");
-  } else {
-    myImage.setAttribute("src", "images/logo.webp");
-    console.log("logo");
-  }
-};
+// DOM Elements
+const chatMessages = document.getElementById('chat-messages');
+const userInput = document.getElementById('user-input');
+const sendButton = document.getElementById('send-button');
+const newChatButton = document.getElementById('new-chat');
+const deleteChatButton = document.getElementById('delete-chat');
+const chatHistoryContainer = document.getElementById('chat-history');
 
-let myButton = document.querySelector("button");
-let myHeading = document.querySelector("h1");
+// Message handling
+async function sendMessage(message) {
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                messages: [{
+                    role: "user",
+                    content: message
+                }]
+            })
+        });
 
-function setUserName() {
-  const myName = prompt("Please enter your name.");
-  localStorage.setItem("name", myName);
-  myHeading.textContent = `Mozilla is cool, ${myName}`;
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.content;
+    } catch (error) {
+        console.error('Error:', error);
+        return `Sorry, there was an error: ${error.message}`;
+    }
 }
 
-if (!localStorage.getItem("name")) {
-  setUserName();
-} else {
-  const storedName = localStorage.getItem("name");
-  myHeading.textContent = `Mozilla is cool, ${storedName}`;
+// UI Updates
+function addMessageToUI(content, isUser = false) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `p-3 rounded-lg ${isUser ? 'bg-blue-600 ml-auto' : 'bg-gray-700'} max-w-[80%] text-left`;
+    messageDiv.textContent = content;
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 }
-myButton.onclick = () => {
-  setUserName();
-};
-function setUserName() {
-  const myName = prompt("Please enter your name.");
-  if (!myName) {
-    setUserName();
-  } else {
-    localStorage.setItem("name", myName);
-    myHeading.textContent = `Mozilla is cool, ${myName}`;
-  }
-}
+
+// Event Listeners
+sendButton.addEventListener('click', async () => {
+    const message = userInput.value.trim();
+    if (message) {
+        addMessageToUI(message, true);
+        userInput.value = '';
+        
+        const response = await sendMessage(message);
+        addMessageToUI(response);
+    }
+});
+
+userInput.addEventListener('keypress', async (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendButton.click();
+    }
+});
+
+// Initialize with a welcome message
+addMessageToUI('Welcome to Faustus. How can I assist you today?');
