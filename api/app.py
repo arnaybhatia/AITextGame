@@ -10,7 +10,7 @@ Key features:
 - Mistral AI integration
 """
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, Response, stream_with_context
 from flask_cors import CORS
 from mistralai.client import MistralClient
 from mistralai.models.chat_completion import ChatMessage
@@ -52,18 +52,24 @@ def chat():
         if not messages:
             return jsonify({"error": "No messages provided"}), 400
             
-        # Convert messages to ChatMessage objects
         chat_messages = [ChatMessage(role=msg["role"], content=msg["content"]) for msg in messages]
-        
-        # Get response from Mistral
-        response = client.chat(
-            model="mistral-small-latest",
-            messages=chat_messages
+
+        def generate():
+            response = client.chat_stream(
+                model="mistral-small-latest",
+                messages=chat_messages
+            )
+            
+            for chunk in response:
+                if chunk.choices[0].delta.content:
+                    yield f"data: {chunk.choices[0].delta.content}\n\n"
+            
+            yield "data: [DONE]\n\n"
+
+        return Response(
+            stream_with_context(generate()),
+            mimetype='text/event-stream'
         )
-        
-        # Access the content from the choices array
-        result = {"content": response.choices[0].message.content}
-        return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

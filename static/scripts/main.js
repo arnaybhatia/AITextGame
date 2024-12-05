@@ -12,39 +12,75 @@ const chatHistoryContainer = document.getElementById('chat-history');
 
 // Message handling
 async function sendMessage(message) {
+    if (!message.trim() || isLoading) return;
+    
+    appendMessage(message, true);
+    conversationHistory.push({ role: "user", content: message });
+    chatHistories[currentChatIndex] = [...conversationHistory];
+
     try {
-        const response = await fetch('/api/chat', {
+        setLoading(true);
+        const messageDiv = appendMessage('', false);
+        let fullResponse = '';
+        
+        const response = await fetch('http://localhost:5000/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                messages: [{
-                    role: "user",
-                    content: message
-                }]
-            })
+            body: JSON.stringify({ messages: conversationHistory }),
         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.slice(6);
+                    if (data === '[DONE]') continue;
+                    
+                    fullResponse += data;
+                    messageDiv.innerHTML = marked.parse(fullResponse);
+                }
+            }
+            
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        const data = await response.json();
-        return data.content;
+        conversationHistory.push({ role: "assistant", content: fullResponse });
+        chatHistories[currentChatIndex] = [...conversationHistory];
+        saveChatHistories();
+        setLoading(false);
     } catch (error) {
         console.error('Error:', error);
-        return `Sorry, there was an error: ${error.message}`;
+        setLoading(false);
+        appendMessage('Sorry, there was an error: ' + error.message, false);
     }
 }
 
 // UI Updates
-function addMessageToUI(content, isUser = false) {
+function appendMessage(content, isUser = false) {
     const messageDiv = document.createElement('div');
-    messageDiv.className = `p-3 rounded-lg ${isUser ? 'bg-blue-600 ml-auto' : 'bg-gray-700'} max-w-[80%] text-left`;
-    messageDiv.textContent = content;
+    messageDiv.className = `p-3 rounded-lg ${isUser ? 'bg-blue-600 ml-auto' : 'bg-gray-700'} max-w-[80%]`;
+    
+    // Render markdown for AI responses, plain text for user
+    if (isUser) {
+        messageDiv.textContent = content;
+    } else {
+        const rendered = marked.parse(content);
+        messageDiv.innerHTML = rendered;
+    }
+    
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+    return messageDiv;
 }
 
 // Event Listeners
