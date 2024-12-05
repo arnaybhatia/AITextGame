@@ -1,6 +1,8 @@
 // Chat history management
-let currentChatId = null;
-let chatHistory = [];
+let conversationHistory = [];
+let chatHistories = [[]];
+let currentChatIndex = 0;
+let isLoading = false;
 
 // DOM Elements
 const chatMessages = document.getElementById('chat-messages');
@@ -10,14 +12,73 @@ const newChatButton = document.getElementById('new-chat');
 const deleteChatButton = document.getElementById('delete-chat');
 const chatHistoryContainer = document.getElementById('chat-history');
 
+// Loading state management
+function setLoading(loading) {
+    isLoading = loading;
+    sendButton.disabled = loading;
+    userInput.disabled = loading;
+    sendButton.textContent = loading ? 'Sending...' : 'Send';
+}
+
+// Chat management functions
+function clearChat() {
+    chatMessages.innerHTML = '';
+    conversationHistory = [];
+    appendMessage("Welcome to Faustus. How can I assist you today?", false);
+}
+
+function switchToChat(index) {
+    currentChatIndex = index;
+    conversationHistory = [...chatHistories[index]];
+    chatMessages.innerHTML = '';
+    
+    if (conversationHistory.length === 0) {
+        appendMessage("Welcome to Faustus. How can I assist you today?", false);
+    } else {
+        conversationHistory.forEach(msg => {
+            appendMessage(msg.content, msg.role === "user");
+        });
+    }
+}
+
+function loadChatHistories() {
+    const saved = localStorage.getItem('chatHistories');
+    if (saved) {
+        chatHistories = JSON.parse(saved);
+        currentChatIndex = parseInt(localStorage.getItem('currentChatIndex') || '0');
+        switchToChat(currentChatIndex);
+    }
+}
+
+function saveChatHistories() {
+    localStorage.setItem('chatHistories', JSON.stringify(chatHistories));
+    localStorage.setItem('currentChatIndex', currentChatIndex.toString());
+    updateChatHistoryUI();
+}
+
+function updateChatHistoryUI() {
+    const historyContainer = document.getElementById('chat-history');
+    historyContainer.innerHTML = '';
+    
+    chatHistories.forEach((history, index) => {
+        const preview = history[0]?.content || 'New Chat';
+        const button = document.createElement('button');
+        button.className = `w-full text-left px-4 py-2 rounded-lg ${
+            index === currentChatIndex ? 'bg-blue-600' : 'bg-gray-700'
+        } hover:bg-blue-700 truncate`;
+        button.textContent = `Chat ${index + 1}: ${preview.substring(0, 30)}...`;
+        button.onclick = () => switchToChat(index);
+        historyContainer.appendChild(button);
+    });
+}
+
 // Message handling
 async function sendMessage(message) {
     if (!message.trim() || isLoading) return;
     
     appendMessage(message, true);
     conversationHistory.push({ role: "user", content: message });
-    chatHistories[currentChatIndex] = [...conversationHistory];
-
+    
     try {
         setLoading(true);
         const messageDiv = appendMessage('', false);
@@ -30,6 +91,10 @@ async function sendMessage(message) {
             },
             body: JSON.stringify({ messages: conversationHistory }),
         });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -48,20 +113,19 @@ async function sendMessage(message) {
                     
                     fullResponse += data;
                     messageDiv.innerHTML = marked.parse(fullResponse);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
                 }
             }
-            
-            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
         conversationHistory.push({ role: "assistant", content: fullResponse });
         chatHistories[currentChatIndex] = [...conversationHistory];
         saveChatHistories();
-        setLoading(false);
     } catch (error) {
         console.error('Error:', error);
+        messageDiv.innerHTML = marked.parse('Sorry, there was an error: ' + error.message);
+    } finally {
         setLoading(false);
-        appendMessage('Sorry, there was an error: ' + error.message, false);
     }
 }
 
@@ -120,6 +184,7 @@ function deleteCurrentChat() {
 
 // Initialize
 loadChatHistories();
+updateChatHistoryUI();
 if (chatHistories[currentChatIndex].length === 0) {
     appendMessage("Welcome to Faustus. How can I assist you today?", false);
 }
