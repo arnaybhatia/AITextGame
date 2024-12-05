@@ -23,7 +23,10 @@ CORS(app)
 app.wsgi_app = WhiteNoise(app.wsgi_app, root='.')
 
 # Initialize Mistral AI client
-client = MistralClient(api_key=os.environ.get("MISTRAL_API_KEY"))
+api_key = os.environ.get("MISTRAL_API_KEY")
+if not api_key:
+    raise ValueError("MISTRAL_API_KEY environment variable is not set")
+client = MistralClient(api_key=api_key)
 
 """
 Routes:
@@ -52,26 +55,58 @@ def chat():
         if not messages:
             return jsonify({"error": "No messages provided"}), 400
             
+        print(f"Received messages: {messages}")
+        print(f"Using API key: {api_key[:5]}...{api_key[-5:]}")
+            
         chat_messages = [ChatMessage(role=msg["role"], content=msg["content"]) for msg in messages]
 
         def generate():
-            response = client.chat_stream(
-                model="mistral-large-latest",
-                messages=chat_messages
-            )
-            
-            for chunk in response:
-                if chunk.choices[0].delta.content:
-                    yield f"data: {chunk.choices[0].delta.content}\n\n"
-            
-            yield "data: [DONE]\n\n"
+            try:
+                has_content = False
+                print("Starting chat stream with Mistral AI...")
+                response = client.chat_stream(
+                    model="mistral-large",  # Changed from mistral-large-latest
+                    messages=chat_messages,
+                    max_tokens=2000,
+                    temperature=0.7
+                )
+                
+                print("Stream created, waiting for chunks...")
+                for chunk in response:
+                    print(f"Raw chunk: {chunk}")
+                    if chunk and hasattr(chunk, 'choices') and chunk.choices:
+                        delta = chunk.choices[0].delta
+                        if hasattr(delta, 'content') and delta.content:
+                            content = delta.content
+                            has_content = True
+                            print(f"Sending chunk: {content}")
+                            yield f"data: {content}\n\n"
+                
+                if not has_content:
+                    error_msg = "No content received from Mistral AI - please check your API key and model configuration"
+                    print(error_msg)
+                    yield f"data: Error: {error_msg}\n\n"
+                    return
+
+                print("Stream complete")
+                yield "data: [DONE]\n\n"
+            except Exception as e:
+                error_msg = f"Stream error: {str(e)}"
+                print(error_msg)
+                yield f"data: Error: {error_msg}\n\n"
 
         return Response(
             stream_with_context(generate()),
-            mimetype='text/event-stream'
+            mimetype='text/event-stream',
+            headers={
+                'Cache-Control': 'no-cache',
+                'X-Accel-Buffering': 'no'
+            }
         )
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        error_msg = f"Chat endpoint error: {str(e)}"
+        print(error_msg)
+        return jsonify({"error": error_msg}), 500
 
 if __name__ == '__main__':
     # Get port from environment variable or default to 5000

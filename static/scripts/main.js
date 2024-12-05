@@ -140,6 +140,7 @@ async function sendMessage(message) {
         setLoading(true);
         let aiMessageDiv = null;
         let fullResponse = '';
+        let hasReceivedContent = false;
         
         const response = await fetch('/api/chat', {
             method: 'POST',
@@ -166,30 +167,44 @@ async function sendMessage(message) {
             const lines = chunk.split('\n');
             
             for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    const data = line.slice(6);
-                    if (data === '[DONE]') continue;
-                    
-                    fullResponse += data;
-                    if (!aiMessageDiv) {
-                        aiMessageDiv = appendMessage(fullResponse, false);
-                    } else {
-                        aiMessageDiv.innerHTML = marked.parse(fullResponse);
+                if (!line.trim() || !line.startsWith('data: ')) continue;
+                
+                const data = line.slice(6).trim();
+                
+                if (data === '[DONE]') {
+                    if (!hasReceivedContent) {
+                        throw new Error('Empty response from server');
                     }
+                    continue;
+                }
+                
+                if (data.startsWith('Error:')) throw new Error(data);
+                
+                hasReceivedContent = true;
+                fullResponse += data;
+                if (!aiMessageDiv) {
+                    aiMessageDiv = appendMessage(fullResponse, false);
+                } else {
+                    aiMessageDiv.innerHTML = marked.parse(fullResponse);
                     chatMessages.scrollTop = chatMessages.scrollHeight;
                 }
             }
         }
 
-        // Save the complete conversation
+        if (!hasReceivedContent) {
+            throw new Error('No response received from the server');
+        }
+
+        // Only save conversation if we got a valid response
         conversationHistory.push({ role: "assistant", content: fullResponse });
         chatHistories[currentChatIndex] = [...conversationHistory];
         saveChatHistories();
         updateChatHistoryUI();
 
     } catch (error) {
-        console.error('Error:', error);
-        const errorDiv = appendMessage('Sorry, there was an error: ' + error.message, false);
+        console.error('Error in sendMessage:', error);
+        appendMessage('Sorry, there was an error: ' + error.message, false);
+        conversationHistory.pop(); // Remove the user message on error
     } finally {
         setLoading(false);
     }
