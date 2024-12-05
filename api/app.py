@@ -18,7 +18,7 @@ import os
 from whitenoise import WhiteNoise
 
 # Initialize Flask app with CORS support
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../static', static_url_path='')
 CORS(app)
 app.wsgi_app = WhiteNoise(app.wsgi_app, root='.')
 
@@ -35,7 +35,7 @@ Routes:
 # Add static file serving
 @app.route('/')
 def index():
-    return send_from_directory('.', 'index.html')
+    return app.send_static_file('index.html')
 
 @app.route('/<path:path>')
 def serve_static(path):

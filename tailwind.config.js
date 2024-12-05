@@ -9,8 +9,8 @@
  */
 module.exports = {
   content: [
-    "./index.html",
-    "./main.js"
+    "./static/**/*.{html,js}",
+    "./static/styles/*.css"
   ],
   theme: {
     extend: {
