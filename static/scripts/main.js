@@ -91,12 +91,12 @@ function updateChatHistoryUI() {
 async function sendMessage(message) {
     if (!message.trim() || isLoading) return;
     
-    const userMessageDiv = appendMessage(message, true);
+    appendMessage(message, true);
     conversationHistory.push({ role: "user", content: message });
     
     try {
         setLoading(true);
-        const aiMessageDiv = appendMessage('', false);
+        let aiMessageDiv = null;
         let fullResponse = '';
         
         const response = await fetch('/api/chat', {
@@ -129,7 +129,11 @@ async function sendMessage(message) {
                     if (data === '[DONE]') continue;
                     
                     fullResponse += data;
-                    aiMessageDiv.innerHTML = marked.parse(fullResponse);
+                    if (!aiMessageDiv) {
+                        aiMessageDiv = appendMessage(fullResponse, false);
+                    } else {
+                        aiMessageDiv.innerHTML = marked.parse(fullResponse);
+                    }
                     chatMessages.scrollTop = chatMessages.scrollHeight;
                 }
             }
@@ -143,7 +147,7 @@ async function sendMessage(message) {
 
     } catch (error) {
         console.error('Error:', error);
-        aiMessageDiv.innerHTML = marked.parse('Sorry, there was an error: ' + error.message);
+        const errorDiv = appendMessage('Sorry, there was an error: ' + error.message, false);
     } finally {
         setLoading(false);
     }
@@ -202,9 +206,30 @@ function deleteCurrentChat() {
     }
 }
 
-// Initialize
-loadChatHistories();
-updateChatHistoryUI();
-if (chatHistories[currentChatIndex].length === 0) {
-    appendMessage("Welcome to Faustus. How can I assist you today?", false);
+// Initialize (replace existing initialization code)
+function initialize() {
+    // Clear any existing messages
+    chatMessages.innerHTML = '';
+    
+    // Load saved chats or create new one
+    const saved = localStorage.getItem('chatHistories');
+    if (saved) {
+        chatHistories = JSON.parse(saved);
+        currentChatIndex = parseInt(localStorage.getItem('currentChatIndex') || '0');
+    } else {
+        chatHistories = [[]];
+        currentChatIndex = 0;
+    }
+    
+    // Show initial message only if it's a new chat
+    if (chatHistories[currentChatIndex].length === 0) {
+        appendMessage("Welcome to Faustus. How can I assist you today?", false);
+    } else {
+        switchToChat(currentChatIndex);
+    }
+    
+    updateChatHistoryUI();
 }
+
+// Replace multiple initialization calls with single initialize()
+initialize();
