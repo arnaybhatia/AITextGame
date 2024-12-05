@@ -87,11 +87,8 @@ function appendMessage(content, isUser = false) {
 sendButton.addEventListener('click', async () => {
     const message = userInput.value.trim();
     if (message) {
-        addMessageToUI(message, true);
         userInput.value = '';
-        
-        const response = await sendMessage(message);
-        addMessageToUI(response);
+        await sendMessage(message);
     }
 });
 
@@ -102,5 +99,30 @@ userInput.addEventListener('keypress', async (e) => {
     }
 });
 
+newChatButton.addEventListener('click', createNewChat);
+deleteChatButton.addEventListener('click', deleteCurrentChat);
+
+function createNewChat() {
+    chatHistories.push([]);
+    currentChatIndex = chatHistories.length - 1;
+    clearChat();
+    saveChatHistories();
+}
+
+function deleteCurrentChat() {
+    if (chatHistories.length > 1) {
+        chatHistories.splice(currentChatIndex, 1);
+        currentChatIndex = Math.max(0, currentChatIndex - 1);
+        saveChatHistories();
+        switchToChat(currentChatIndex);
+    }
+}
+
+// Initialize
+loadChatHistories();
+if (chatHistories[currentChatIndex].length === 0) {
+    appendMessage("Welcome to Faustus. How can I assist you today?", false);
+}
+
 // Initialize with a welcome message
-addMessageToUI('Welcome to Faustus. How can I assist you today?');
+appendMessage("Welcome to Faustus. How can I assist you today?", false);
