@@ -55,13 +55,12 @@ def chat():
         if not messages:
             return jsonify({"error": "No messages provided"}), 400
             
-        # Convert messages to ChatMessage format
         chat_messages = [ChatMessage(role=msg["role"], content=msg["content"]) for msg in messages]
 
         def generate():
             try:
                 response = client.chat_stream(
-                    model="mistral-medium",  # Using medium model for better reliability
+                    model="mistral-medium",
                     messages=chat_messages,
                     temperature=0.7,
                     max_tokens=4096,
@@ -70,11 +69,28 @@ def chat():
                 )
 
                 has_yielded = False
+                buffer = ""
+                
                 for chunk in response:
                     if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
                         content = chunk.choices[0].delta.content
-                        has_yielded = True
-                        yield f"data: {content}\n\n"
+                        
+                        # Add space after punctuation if missing
+                        if buffer and buffer[-1] in ".!?" and content and content[0].isalpha():
+                            buffer += " "
+                        
+                        buffer += content
+                        
+                        # Yield complete words or sentences
+                        if content.endswith((" ", ".", "!", "?", "\n")):
+                            has_yielded = True
+                            yield f"data: {buffer}\n\n"
+                            buffer = ""
+
+                # Yield any remaining content in buffer
+                if buffer:
+                    has_yielded = True
+                    yield f"data: {buffer}\n\n"
 
                 if not has_yielded:
                     yield f"data: Error: No response generated\n\n"
