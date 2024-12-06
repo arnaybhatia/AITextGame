@@ -55,58 +55,48 @@ def chat():
         if not messages:
             return jsonify({"error": "No messages provided"}), 400
             
-        print(f"Received messages: {messages}")
-        print(f"Using API key: {api_key[:5]}...{api_key[-5:]}")
-            
+        # Convert messages to ChatMessage format
         chat_messages = [ChatMessage(role=msg["role"], content=msg["content"]) for msg in messages]
 
         def generate():
             try:
-                has_content = False
-                print("Starting chat stream with Mistral AI...")
                 response = client.chat_stream(
-                    model="mistral-large",  # Changed from mistral-large-latest
+                    model="mistral-medium",  # Using medium model for better reliability
                     messages=chat_messages,
-                    max_tokens=2000,
-                    temperature=0.7
+                    temperature=0.7,
+                    max_tokens=4096,
+                    top_p=0.95,
+                    safe_mode=False
                 )
-                
-                print("Stream created, waiting for chunks...")
-                for chunk in response:
-                    print(f"Raw chunk: {chunk}")
-                    if chunk and hasattr(chunk, 'choices') and chunk.choices:
-                        delta = chunk.choices[0].delta
-                        if hasattr(delta, 'content') and delta.content:
-                            content = delta.content
-                            has_content = True
-                            print(f"Sending chunk: {content}")
-                            yield f"data: {content}\n\n"
-                
-                if not has_content:
-                    error_msg = "No content received from Mistral AI - please check your API key and model configuration"
-                    print(error_msg)
-                    yield f"data: Error: {error_msg}\n\n"
-                    return
 
-                print("Stream complete")
-                yield "data: [DONE]\n\n"
+                has_yielded = False
+                for chunk in response:
+                    if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        has_yielded = True
+                        yield f"data: {content}\n\n"
+
+                if not has_yielded:
+                    yield f"data: Error: No response generated\n\n"
+                else:
+                    yield "data: [DONE]\n\n"
+
             except Exception as e:
-                error_msg = f"Stream error: {str(e)}"
-                print(error_msg)
-                yield f"data: Error: {error_msg}\n\n"
+                print(f"Stream error: {str(e)}")
+                yield f"data: Error: {str(e)}\n\n"
 
         return Response(
             stream_with_context(generate()),
             mimetype='text/event-stream',
             headers={
                 'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
                 'X-Accel-Buffering': 'no'
             }
         )
     except Exception as e:
-        error_msg = f"Chat endpoint error: {str(e)}"
-        print(error_msg)
-        return jsonify({"error": error_msg}), 500
+        print(f"Chat endpoint error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     # Get port from environment variable or default to 5000
