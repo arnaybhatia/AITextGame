@@ -784,6 +784,8 @@ video {
 .main-content {
     height: 100vh;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Markdown Overrides */
@@ -831,8 +833,17 @@ video {
 }
 
 /* Message spacing */
+#chat-messages {
+    height: calc(100vh - 140px); /* Adjust for header and input area */
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    padding-bottom: 2rem;
+}
+
 #chat-messages > div {
     margin-bottom: 1rem;
+    word-wrap: break-word;
+    max-width: 100%;
 }
 
 #chat-messages > div:last-child {
