@@ -829,3 +829,20 @@ video {
 .markdown-body table tr:nth-child(2n) {
     background-color: #273548 !important;
 }
+
+/* Message spacing */
+#chat-messages > div {
+    margin-bottom: 1rem;
+}
+
+#chat-messages > div:last-child {
+    margin-bottom: 0;
+}
+
+/* Input container */
+.input-container {
+    padding: 1rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
